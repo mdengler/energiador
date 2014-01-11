@@ -4,10 +4,14 @@
 # Plots a two-column csv file using matplotlib.
 # The first row of the csv file is assumed to contain axis labels.
 #
-
-import matplotlib.pyplot as plt
 import csv
+import os
 import sys
+
+import matplotlib
+if not os.environ.get("DISPLAY"):
+    matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import numpy as np
 
 if len(sys.argv) <= 1:
@@ -40,4 +44,9 @@ axarr[2].set_ylabel("power [W]")
 plt.xlabel("time [s]")
 #plt.grid()
 #plt.legend()
-plt.show()
+
+if os.environ.get("DISPLAY"):
+    plt.show()
+else:
+    plt.savefig("energiador.svg")
+
