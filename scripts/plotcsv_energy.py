@@ -4,6 +4,7 @@
 # Plots a two-column csv file using matplotlib.
 # The first row of the csv file is assumed to contain axis labels.
 #
+import collections
 import csv
 import datetime
 import os
@@ -22,6 +23,10 @@ def get_data(filename):
     y1 = []
     y2 = []
     rownum = 0
+    datadict = {"current": [],
+                "voltage": [],
+                "datetime": [],
+                }
     with open(filename, "rb") as f:
         reader = csv.reader(f, delimiter=";")
         for row in reader:
@@ -29,29 +34,53 @@ def get_data(filename):
             if len(row) != 3 or not all(row):
                 print "WARNING: skipped invalid row {}".format(rownum)
                 continue
-            if row[1] != "" and row[2] != "":
+            if isinstance(row, collections.MutableMapping):
+                for key in row:
+                    row[key] = float(row[key])
+                row["datetime"] = datetime.datetime.fromtimestamp(row["datetime"])
+                rowdict = row
+            else:
+                rowdict = dict()
                 row = map(float, row)
-                times.append(datetime.datetime.fromtimestamp(row[0]))
-                y1.append(row[1])
-                y2.append(row[2])
-    return times, y1, y2
+                rowdict["datetime"] = datetime.datetime.fromtimestamp(row[0])
+                rowdict["current"] = row[1] / 1e3
+                rowdict["voltage"] = row[2] / 1e6
+
+            for key in datadict:
+                datadict[key].append(rowdict[key])
+
+    return datadict
 
 
-def make_figure(times, y1, y2):
-    fig, axarr = plt.subplots(3, sharex=True)
+def make_figure(datadict):
+    if not "datetime" in datadict:
+        raise ValueError(
+            "datadict must have at least a 'datetime' key / series")
+
+    fig, axarr = plt.subplots(len(datadict), sharex=True)
     fig.set_size_inches(18.5, 10.5)
 
     date_formatter = matplotlib.dates.DateFormatter("%H")
     axarr[0].xaxis.set_major_formatter(date_formatter)
+
+    times = datadict["datetime"]
+
     plt.grid(True)
-    axarr[0].plot(times, np.array(y1) / 1e3, label="current")
-    axarr[0].set_ylabel("current [mA]")
-    #plt.grid()
-    axarr[1].plot(times, np.array(y2) / 1e6, label="voltage")
-    axarr[1].set_ylabel("voltage [V]")
-    #plt.grid()
-    axarr[2].plot(times, np.array(y2) / 1e6 * np.array(y1) / 1e6, label="power")
-    axarr[2].set_ylabel("power [W]")
+
+    for key, ylabel, ax in zip(("current", "voltage"),
+                               ("current [mA]", "voltage [V]"),
+                               axarr):
+        if key == "datetime":
+            continue
+        ax.plot(times, np.array(datadict[key]), label=key)
+        ax.set_ylabel(ylabel)
+
+    axarr[-1].plot(
+        times,
+        np.array(datadict["voltage"]) * np.array(datadict["current"]),
+        label="power")
+    axarr[-1].set_ylabel("power [W]")
+
     plt.xlabel("time [hour]")
     #plt.grid()
     #plt.legend()
@@ -63,7 +92,7 @@ if __name__ == "__main__":
         print "usage: %s [csv-file]" % sys.argv[0]
         quit()
     else:
-        fig = make_figure(*get_data(sys.argv[1]))
+        fig = make_figure(get_data(sys.argv[1]))
 
         if os.environ.get("DISPLAY"):
             plt.show()
