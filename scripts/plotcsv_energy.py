@@ -33,7 +33,7 @@ def get_data(filename):
 
 
 def make_figure(times, y1, y2):
-    f, axarr = plt.subplots(3, sharex=True)
+    fig, axarr = plt.subplots(3, sharex=True)
     date_formatter = matplotlib.dates.DateFormatter("%H")
     axarr[0].xaxis.set_major_formatter(date_formatter)
     plt.grid(True)
@@ -48,7 +48,7 @@ def make_figure(times, y1, y2):
     plt.xlabel("time [hour]")
     #plt.grid()
     #plt.legend()
-    return plt.gcf()
+    return fig
 
 
 if __name__ == "__main__":
