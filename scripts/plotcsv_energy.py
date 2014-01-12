@@ -39,6 +39,8 @@ def get_data(filename):
 
 def make_figure(times, y1, y2):
     fig, axarr = plt.subplots(3, sharex=True)
+    fig.set_size_inches(18.5, 10.5)
+
     date_formatter = matplotlib.dates.DateFormatter("%H")
     axarr[0].xaxis.set_major_formatter(date_formatter)
     plt.grid(True)
