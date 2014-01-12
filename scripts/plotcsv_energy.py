@@ -21,9 +21,14 @@ def get_data(filename):
     times = []
     y1 = []
     y2 = []
+    rownum = 0
     with open(filename, "rb") as f:
         reader = csv.reader(f, delimiter=";")
         for row in reader:
+            rownum += 1
+            if len(row) != 3 or not all(row):
+                print "WARNING: skipped invalid row {}".format(rownum)
+                continue
             if row[1] != "" and row[2] != "":
                 row = map(float, row)
                 times.append(datetime.datetime.fromtimestamp(row[0]))
